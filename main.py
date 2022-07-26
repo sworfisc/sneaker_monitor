@@ -25,14 +25,14 @@ def lista_dunks(url):
     finally:
         scroll_bottom(driver)
         dunks = driver.find_elements(By.CLASS_NAME, 'product-card__img-link-overlay')
-        dunks_hoy = [dunk.get_attribute('href') for dunk in dunks]
-        dunks_nuevas = list(filter(lambda dunk: dunk not in dunks_ayer and, dunks_hoy))
+        dunks_hoy = [dunk.get_attribute('href') for dunk in dunks if 'high' not in dunk.get_attribute('href')]
+        dunks_nuevas = list(filter(lambda dunk: dunk not in dunks_ayer, dunks_hoy))
         global dunks_ayer
         dunks_ayer = dunks_hoy
         print(dunks_nuevas)
 
 
-schedule.every(1).minutes.do(lista_dunks, url)
+schedule.every(10).seconds.do(lista_dunks, url)
 
 
 def scroll_bottom(driver):
