@@ -1,5 +1,6 @@
 import logging
 import time
+import schedule
 from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.service import Service
@@ -8,9 +9,13 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 dunks_ayer = []
 
-def lista_dunks(url, driver):
+url='https://www.nike.com/es/w?q=dunk&vst=dunk'
 
-    try: # Aceptar cookies
+
+def lista_dunks(url):
+    driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+    driver.get(url)
+    try:    # Aceptar cookies
         driver.implicitly_wait(10)
         driver.find_element(By.XPATH, '//*[@id="gen-nav-commerce-header-v2"]/div[1]/div/div[2]/div/div[2]/div[2]/button').click()
 
@@ -18,14 +23,19 @@ def lista_dunks(url, driver):
         print("No hubo cookies que aceptar")
 
     finally:
-        scroll_bottom()
+        scroll_bottom(driver)
         dunks = driver.find_elements(By.CLASS_NAME, 'product-card__img-link-overlay')
         dunks_hoy = [dunk.get_attribute('href') for dunk in dunks]
-        dunks_nuevas = list(filter(lambda dunk: dunk not in dunks_ayer, dunks_hoy))
+        dunks_nuevas = list(filter(lambda dunk: dunk not in dunks_ayer and, dunks_hoy))
+        global dunks_ayer
+        dunks_ayer = dunks_hoy
         print(dunks_nuevas)
 
 
-def scroll_bottom():
+schedule.every(1).minutes.do(lista_dunks, url)
+
+
+def scroll_bottom(driver):
     SCROLL_PAUSE_TIME = 0.5
 
     # Get scroll height
@@ -45,14 +55,10 @@ def scroll_bottom():
         last_height = new_height
 
 
-if __name__ == "__main__":
-    url = 'https://www.nike.com/es/w?q=dunk&vst=dunk'
+while True:
     options = webdriver.ChromeOptions()
     options.binary_location = "C:\Program Files\Google\Chrome\Application\chrome.exe"
     # s=Service(r"C:\Users\javie\chromedriver_win32\chromedriver.exe")
-    driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
-    driver.get(url)
 
-    lista_dunks(url, driver)
-
-    driver.quit()
+    schedule.run_pending()
+    time.sleep(1)
