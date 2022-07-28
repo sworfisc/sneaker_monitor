@@ -8,7 +8,10 @@ from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support import expected_conditions as EC
+
 import os
 
 dunks_ayer = []
@@ -25,16 +28,12 @@ bot = discord.Client()
 
 @tasks.loop(seconds=10)
 async def lista_dunks():
-    driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
-    driver.get(nike_page)
-    try:    # Aceptar cookies
-        driver.implicitly_wait(10)
-        driver.find_element(By.XPATH, '//*[@id="gen-nav-commerce-header-v2"]/div[1]/div/div[2]/div/div[2]/div[2]/button').click()
+    try:
+        driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+        driver.get(nike_page)
+        # Aceptar cookies
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="gen-nav-commerce-header-v2"]/div[1]/div/div[2]/div/div[2]/div[2]/button'))).click()
 
-    except NoSuchElementException:
-        print("No hubo cookies que aceptar")
-
-    finally:
         scroll_bottom(driver)
         dunks = driver.find_elements(By.CLASS_NAME, 'product-card__img-link-overlay')
         dunks_hoy = [dunk.get_attribute('href') for dunk in dunks if 'high' not in dunk.get_attribute('href')]
@@ -46,6 +45,9 @@ async def lista_dunks():
         for link in dunks_nuevas:
             await channel.send(link)
             time.sleep(1)
+    except Exception as e:
+        logging.info("Excepción con código:", e)
+
 
 
 @bot.event
