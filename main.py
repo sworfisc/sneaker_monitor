@@ -1,20 +1,32 @@
 import logging
 import time
+
+import discord as discord
+from discord.ext import commands, tasks
 import schedule
 from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
+import os
 
 dunks_ayer = []
+dunk_nuevas = []
 
-url='https://www.nike.com/es/w?q=dunk&vst=dunk'
+
+nike_page='https://www.nike.com/es/w?q=dunk&vst=dunk'
+options = webdriver.ChromeOptions()
+options.binary_location = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+token = os.getenv('TOKEN')
+bot = discord.Client()
 
 
-def lista_dunks(url):
+
+@tasks.loop(seconds=10)
+async def lista_dunks():
     driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
-    driver.get(url)
+    driver.get(nike_page)
     try:    # Aceptar cookies
         driver.implicitly_wait(10)
         driver.find_element(By.XPATH, '//*[@id="gen-nav-commerce-header-v2"]/div[1]/div/div[2]/div/div[2]/div[2]/button').click()
@@ -30,9 +42,15 @@ def lista_dunks(url):
         global dunks_ayer
         dunks_ayer = dunks_hoy
         print(dunks_nuevas)
+        channel = bot.get_channel(1002216168163115172)
+        for link in dunks_nuevas:
+            await channel.send(link)
+            time.sleep(1)
 
 
-schedule.every(10).seconds.do(lista_dunks, url)
+@bot.event
+async def on_ready():
+    lista_dunks.start()
 
 
 def scroll_bottom(driver):
@@ -55,10 +73,5 @@ def scroll_bottom(driver):
         last_height = new_height
 
 
-while True:
-    options = webdriver.ChromeOptions()
-    options.binary_location = "C:\Program Files\Google\Chrome\Application\chrome.exe"
-    # s=Service(r"C:\Users\javie\chromedriver_win32\chromedriver.exe")
-
-    schedule.run_pending()
-    time.sleep(1)
+bot.run(token)
+lista_dunks.start()
